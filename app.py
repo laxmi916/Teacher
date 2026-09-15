@@ -135,13 +135,11 @@ if st.session_state.latest_audio_to_play is not None:
     st.audio(st.session_state.latest_audio_to_play, format="audio/mp3", autoplay=True)
     st.session_state.latest_audio_to_play = None  # Reset so it won't re-trigger on future reruns
 
-# --- 7. CHAT DISPLAY ---
-for msg in st.session_state.chat_history:
-    if msg["role"] == "Child":
-        st.chat_message("user").write(msg["text"])
-    else:
+# --- 7. CHAT DISPLAY (SHOW ONLY LATEST RESPONSE) ---
+if st.session_state.chat_history:
+    # Get the latest message from the history list
+    latest_msg = st.session_state.chat_history[-1]
+    
+    if latest_msg["role"] == "AI Teacher":
         with st.chat_message("assistant"):
-            st.write(msg["text"])
-            if msg["audio"] is not None:
-                # Manual playback controls for old chat messages (autoplay disabled)
-                st.audio(msg["audio"], format="audio/mp3", autoplay=False)
+            st.write(latest_msg["text"])
