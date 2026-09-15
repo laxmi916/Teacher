@@ -1,0 +1,182 @@
+''' import os
+from google import genai
+from google.genai import types
+
+# 1. Set your API key
+API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBT2rVd8drw345XvSLvQBIBB4knHwk6F4k")
+
+print("Initializing Gemini Client...")
+client = genai.Client(api_key=API_KEY)
+
+# Disable automatic function calling (AFC) to silence the warning
+config = types.GenerateContentConfig(
+    automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
+)
+
+print("Sending test request to Gemini 2.5 Flash...")
+try:
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents="Say 'Hello! Gemini API is working perfectly!' in Telugu and English.",
+        config=config
+    )
+    print("\n--- RESPONSE RECEIVED ---")
+    print(response.text)
+    print("-------------------------\n")
+except Exception as e:
+    print(f"\nERROR: Failed to get response.\nDetails: {e}")   
+'''
+import streamlit as st
+from google import genai
+from google.genai import types
+import edge_tts
+import asyncio
+import io
+import os
+
+# --- 1. PAGE SETUP ---
+st.set_page_config(page_title="AI Teacher - Kids AI Tutor", page_icon="🎨")
+st.title("🎨 AI Teacher - Learn English & Telugu!")
+st.write("Click the mic to speak or type a message below!")
+
+# --- 2. SETUP PERSISTENT GEMINI CLIENT & CHAT ---
+# On Streamlit Cloud, store this key in Secrets Management (st.secrets["GEMINI_API_KEY"])
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY"))
+
+SYSTEM_PROMPT = """
+You are 'AI Teacher', a warm, loving, and patient AI tutor helping young Telugu-speaking kids learn English.
+
+Strict Output Rules:
+1. NO DUPLICATION: Never repeat the same explanation or word twice in both scripts. Use EITHER English transliteration (e.g., raavadam) OR Telugu script (రావడం), never both together like "రావడం (raavadam)".
+2. GRAMMAR CORRECTION: If the child uses broken English or direct literal translations (e.g., "I come, you go"), gently show them the natural English sentence (e.g., "I will come, you can go!").
+3. LANGUAGE RULES FOR PRAISE:
+   - NEVER use generic filler praise like "Keep practicing, you're doing great!".
+4. BREVITY: Keep your entire response under 2 to 3 short sentences maximum.
+"""
+
+if "client" not in st.session_state:
+    st.session_state.client = genai.Client(api_key=GEMINI_API_KEY)
+
+if "chat_session" not in st.session_state:
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        temperature=0.7,
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
+    )
+    st.session_state.chat_session = st.session_state.client.chats.create(
+        model="gemini-2.5-flash",
+        config=config
+    )
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+if "last_processed_id" not in st.session_state:
+    st.session_state.last_processed_id = None
+
+# --- 3. HELPER FUNCTIONS ---
+def text_to_speech_bytes(text):
+    """Generates audio in-memory to prevent disk file-lock issues on Streamlit Cloud."""
+    async def _async_generate():
+        tts = edge_tts.Communicate(text=text, voice="te-IN-MohanNeural")
+        audio_stream = io.BytesIO()
+        async for chunk in tts.stream():
+            if chunk["type"] == "audio":
+                audio_stream.write(chunk["data"])
+        audio_stream.seek(0)
+        return audio_stream
+    
+    return asyncio.run(_async_generate())
+
+def get_response_from_gemini(user_text=None, audio_bytes=None):
+    """Sends user text or in-memory audio bytes to Gemini."""
+    contents = []
+    
+    if audio_bytes:
+        audio_part = types.Part.from_bytes(
+            data=audio_bytes,
+            mime_type="audio/wav"
+        )
+        contents.append(audio_part)
+        contents.append("Listen to the child's recorded voice input above. Respond as AI Teacher.")
+    elif user_text:
+        contents.append(user_text)
+
+    response = st.session_state.chat_session.send_message(contents)
+    return response.text
+
+# --- 4. USER INPUT UI ---
+try:
+    from streamlit_mic_recorder import mic_recorder
+    st.subheader("🎤 Speak to AI Teacher:")
+    audio_data = mic_recorder(
+        start_prompt="Click to Speak 🎙️",
+        stop_prompt="Click to Stop & Send 🛑",
+        key="recorder",
+        just_once=False
+    )
+except ImportError:
+    st.warning("`streamlit-mic-recorder` not found. Install it to enable microphone input.")
+    audio_data = None
+
+text_input = st.text_input("Or type your message (Telugu or English):", key="text_field")
+submit_text = st.button("Send Text")
+
+# --- 5. PROCESS INPUT & RESPOND ---
+user_audio_bytes = None
+user_text_msg = None
+
+if audio_data and "bytes" in audio_data and len(audio_data["bytes"]) > 0:
+    audio_id = audio_data.get("id")
+    if audio_id != st.session_state.last_processed_id:
+        user_audio_bytes = audio_data["bytes"]
+        st.session_state.last_processed_id = audio_id
+
+elif submit_text and text_input:
+    user_text_msg = text_input
+
+if user_audio_bytes or user_text_msg:
+    with st.spinner("AI Teacher is listening..."):
+        try:
+            # 1. Fetch text response from Gemini
+            ai_reply = get_response_from_gemini(
+                user_text=user_text_msg, 
+                audio_bytes=user_audio_bytes
+            )
+            
+            # 2. Synthesize Speech to bytes buffer
+            audio_buffer = text_to_speech_bytes(ai_reply)
+            
+            # 3. Track chat history with in-memory audio
+            st.session_state.chat_history.append({
+                "role": "Child",
+                "text": user_text_msg if user_text_msg else "🎤 [Spoken Audio]",
+                "audio": None
+            })
+            st.session_state.chat_history.append({
+                "role": "AI Teacher",
+                "text": ai_reply,
+                "audio": audio_buffer
+            })
+            
+        except Exception as e:
+            st.error(f"Error connecting to Gemini API: {str(e)}")
+
+# --- 6. CHAT DISPLAY ---
+total_messages = len(st.session_state.chat_history)
+
+for idx, msg in enumerate(st.session_state.chat_history):
+    if msg["role"] == "Child":
+        st.chat_message("user").write(msg["text"])
+    else:
+        with st.chat_message("assistant"):
+            st.write(msg["text"])
+            is_latest = (idx == total_messages - 1)
+            if msg["audio"] is not None:
+                audio_container = st.container()
+                with audio_container:
+                    st.audio(
+                        msg["audio"], 
+                        format="audio/mp3", 
+                        autoplay=is_latest
+                    )
