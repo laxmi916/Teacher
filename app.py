@@ -9,7 +9,7 @@ import os
 # --- 1. PAGE SETUP ---
 st.set_page_config(page_title="AI Teacher - Kids AI Tutor", page_icon="🎨")
 st.title("AI Teacher")
-st.write("Click the mic to speak or type a message below!")
+#st.write("Click the mic to speak or type a message below!")
 
 # --- 2. SETUP PERSISTENT GEMINI CLIENT & CHAT ---
 # On Streamlit Cloud, store this key in Secrets Management (st.secrets["GEMINI_API_KEY"])
@@ -91,8 +91,8 @@ except ImportError:
     st.warning("`streamlit-mic-recorder` not found. Install it to enable microphone input.")
     audio_data = None
 
-text_input = st.text_input("Or type your message (Telugu or English):", key="text_field")
-submit_text = st.button("Send Text")
+#text_input = st.text_input("Or type your message (Telugu or English):", key="text_field")
+#submit_text = st.button("Send Text")
 
 # --- 5. PROCESS INPUT & RESPOND ---
 user_audio_bytes = None
@@ -104,15 +104,12 @@ if audio_data and "bytes" in audio_data and len(audio_data["bytes"]) > 0:
         user_audio_bytes = audio_data["bytes"]
         st.session_state.last_processed_id = audio_id
 
-elif submit_text and text_input:
-    user_text_msg = text_input
-
-if user_audio_bytes or user_text_msg:
+if user_audio_bytes:
     with st.spinner("AI Teacher is listening..."):
         try:
             # 1. Fetch text response from Gemini
             ai_reply = get_response_from_gemini(
-                user_text=user_text_msg, 
+                user_text=None, 
                 audio_bytes=user_audio_bytes
             )
             
@@ -122,7 +119,7 @@ if user_audio_bytes or user_text_msg:
             # 3. Track chat history with in-memory audio
             st.session_state.chat_history.append({
                 "role": "Child",
-                "text": user_text_msg if user_text_msg else "🎤 [Spoken Audio]",
+                "text": "🎤 [Spoken Audio]",
                 "audio": None
             })
             st.session_state.chat_history.append({
