@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploying a Streamlit App via GitHub to Streamlit Community Cloud</title>
+    <style>
+        :root {
+            --primary-color: #ff4b4b;
+            --background-color: #0e1117;
+            --card-background: #161b22;
+            --text-color: #e6edf3;
+            --muted-color: #8b949e;
+            --code-bg: #0d1117;
+            --border-color: #30363d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--muted-color);
+            font-size: 1.1rem;
+        }
+
+        .step-card {
+            background-color: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-number {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            text-align: center;
+            line-height: 28px;
+            margin-right: 0.5rem;
+        }
+
+        h2 {
+            display: flex;
+            align-items: center;
+            margin-top: 0;
+            font-size: 1.3rem;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 0.9rem;
+        }
+
+        code {
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 0.9rem;
+            color: #ff7b72;
+        }
+
+        pre code {
+            padding: 0;
+            color: var(--text-color);
+        }
+
+        ul, ol {
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .note-box {
+            background-color: rgba(255, 75, 75, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            border-radius: 0 6px 6px 0;
+            margin: 1rem 0;
+        }
+
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--muted-color);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Deploying a Streamlit App to Community Cloud</h1>
+        <p class="subtitle">A step-by-step guide to hosting your Python application on GitHub and deploying it for free on Streamlit Community Cloud.</p>
+    </header>
+
+    <main>
+        <!-- STEP 1 -->
+        <section class="step-card">
+            <h2><span class="step-number">1</span> Prepare Your Repository Files</h2>
+            <p>Ensure your local project directory contains all the required files before pushing to GitHub:</p>
+            
+            <ul>
+                <li><code>app.py</code>: Your main Streamlit script containing your application code.</li>
+                <li><code>requirements.txt</code>: The Python packages required by your application.</li>
+                <li><code>packages.txt</code> (Optional): System-level packages (like <code>ffmpeg</code> or C libraries) required by Python audio/video libraries.</li>
+            </ul>
+
+            <h3>Example <code>requirements.txt</code></h3>
+            <pre><code>streamlit
+google-genai
+edge-tts
+streamlit-mic-recorder</code></pre>
+        </section>
+
+        <!-- STEP 2 -->
+        <section class="step-card">
+            <h2><span class="step-number">2</span> Push Project to GitHub</h2>
+            <p>Publish your application code to a public or private GitHub repository:</p>
+
+            <ol>
+                <li>Go to <a href="https://github.com/new" target="_blank" style="color: var(--primary-color);">GitHub</a> and create a new repository (e.g., <code>ai-teacher-streamlit</code>).</li>
+                <li>In your local terminal, initialize Git, commit your files, and push to GitHub:</li>
+            </ol>
+
+            <pre><code>git init
+git add app.py requirements.txt
+git commit -m "Initial commit for Streamlit app"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
+git push -u origin main</code></pre>
+        </section>
+
+        <!-- STEP 3 -->
+        <section class="step-card">
+            <h2><span class="step-number">3</span> Deploy on Streamlit Community Cloud</h2>
+            <p>Connect your GitHub repository to Streamlit's hosting platform:</p>
+
+            <ol>
+                <li>Visit <a href="https://share.streamlit.io" target="_blank" style="color: var(--primary-color);">share.streamlit.io</a> and sign in with your GitHub account.</li>
+                <li>Click <strong>"Create app"</strong> or <strong>"New app"</strong>.</li>
+                <li>Select <strong>"I already have an app"</strong> and fill in the details:
+                    <ul>
+                        <li><strong>Repository:</strong> Select your GitHub repository (e.g., <code>YOUR_USERNAME/YOUR_REPOSITORY</code>).</li>
+                        <li><strong>Branch:</strong> <code>main</code></li>
+                        <li><strong>Main file path:</strong> <code>app.py</code></li>
+                    </ul>
+                </li>
+            </ol>
+        </section>
+
+        <!-- STEP 4 -->
+        <section class="step-card">
+            <h2><span class="step-number">4</span> Configure Environment Secrets</h2>
+            <p>If your application requires API keys (such as <code>GEMINI_API_KEY</code>), set them securely in Streamlit Cloud rather than hardcoding them into your repository.</p>
+
+            <ol>
+                <li>On the deployment setup screen (or under App Settings &gt; Secrets), expand <strong>Advanced settings</strong>.</li>
+                <li>Add your secrets using TOML format:</li>
+            </ol>
+
+            <pre><code>GEMINI_API_KEY = "your_actual_gemini_api_key_here"</code></pre>
+
+            <div class="note-box">
+                <strong>Security Reminder:</strong> Never upload plain-text API keys or credentials directly to public GitHub repositories. Always use <code>st.secrets</code> for cloud deployment.
+            </div>
+        </section>
+
+        <!-- STEP 5 -->
+        <section class="step-card">
+            <h2><span class="step-number">5</span> Launch and Manage</h2>
+            <ol>
+                <li>Click <strong>"Deploy!"</strong></li>
+                <li>Streamlit Cloud will install the dependencies specified in <code>requirements.txt</code> and build your application container.</li>
+                <li>Once complete, your app will be live at a public URL (e.g., <code>https://your-app-name.streamlit.app</code>).</li>
+                <li>Any future updates pushed to your <code>main</code> branch on GitHub will automatically trigger a redeployment on Streamlit Cloud.</li>
+            </ol>
+        </section>
+    </main>
+
+    <footer>
+        <p>Streamlit Cloud Deployment Guide &bull; Built for Streamlit & Python Applications</p>
+    </footer>
+
+</body>
+</html>
