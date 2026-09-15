@@ -36,7 +36,7 @@ if "chat_session" not in st.session_state:
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
     )
     st.session_state.chat_session = st.session_state.client.chats.create(
-        model="gemini-2.0-flash",
+        model="gemini-3.5-flash-lite",
         config=config
     )
 
