@@ -1,31 +1,3 @@
-''' import os
-from google import genai
-from google.genai import types
-
-# 1. Set your API key
-API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBT2rVd8drw345XvSLvQBIBB4knHwk6F4k")
-
-print("Initializing Gemini Client...")
-client = genai.Client(api_key=API_KEY)
-
-# Disable automatic function calling (AFC) to silence the warning
-config = types.GenerateContentConfig(
-    automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
-)
-
-print("Sending test request to Gemini 2.5 Flash...")
-try:
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents="Say 'Hello! Gemini API is working perfectly!' in Telugu and English.",
-        config=config
-    )
-    print("\n--- RESPONSE RECEIVED ---")
-    print(response.text)
-    print("-------------------------\n")
-except Exception as e:
-    print(f"\nERROR: Failed to get response.\nDetails: {e}")   
-'''
 import streamlit as st
 from google import genai
 from google.genai import types
