@@ -9,10 +9,8 @@ import os
 # --- 1. PAGE SETUP ---
 st.set_page_config(page_title="AI Teacher - Kids AI Tutor", page_icon="🎨")
 st.title("AI Teacher")
-#st.write("Click the mic to speak or type a message below!")
 
 # --- 2. SETUP PERSISTENT GEMINI CLIENT & CHAT ---
-# On Streamlit Cloud, store this key in Secrets Management (st.secrets["GEMINI_API_KEY"])
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY"))
 
 SYSTEM_PROMPT = """
@@ -35,7 +33,7 @@ if "chat_session" not in st.session_state:
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
     )
     st.session_state.chat_session = st.session_state.client.chats.create(
-        model="gemini-3.5-flash-lite",
+        model="gemini-2.5-flash",
         config=config
     )
 
@@ -44,6 +42,9 @@ if "chat_history" not in st.session_state:
 
 if "last_processed_id" not in st.session_state:
     st.session_state.last_processed_id = None
+
+if "latest_audio_to_play" not in st.session_state:
+    st.session_state.latest_audio_to_play = None
 
 # --- 3. HELPER FUNCTIONS ---
 def text_to_speech_bytes(text):
@@ -79,7 +80,6 @@ def get_response_from_gemini(user_text=None, audio_bytes=None):
 # --- 4. USER INPUT UI ---
 try:
     from streamlit_mic_recorder import mic_recorder
-    #st.subheader("🎤 Speak to AI Teacher:")
     audio_data = mic_recorder(
         start_prompt="Speak 🎙️",
         stop_prompt="Click to Stop & Send 🛑",
@@ -90,12 +90,8 @@ except ImportError:
     st.warning("`streamlit-mic-recorder` not found. Install it to enable microphone input.")
     audio_data = None
 
-#text_input = st.text_input("Or type your message (Telugu or English):", key="text_field")
-#submit_text = st.button("Send Text")
-
 # --- 5. PROCESS INPUT & RESPOND ---
 user_audio_bytes = None
-user_text_msg = None
 
 if audio_data and "bytes" in audio_data and len(audio_data["bytes"]) > 0:
     audio_id = audio_data.get("id")
@@ -115,7 +111,10 @@ if user_audio_bytes:
             # 2. Synthesize Speech to bytes buffer
             audio_buffer = text_to_speech_bytes(ai_reply)
             
-            # 3. Track chat history with in-memory audio
+            # 3. Store the latest generated audio specifically for autoplaying
+            st.session_state.latest_audio_to_play = audio_buffer
+            
+            # 4. Append to chat history (without autoplay flags)
             st.session_state.chat_history.append({
                 "role": "Child",
                 "text": "🎤 [Spoken Audio]",
@@ -130,21 +129,19 @@ if user_audio_bytes:
         except Exception as e:
             st.error(f"Error connecting to Gemini API: {str(e)}")
 
-# --- 6. CHAT DISPLAY ---
-total_messages = len(st.session_state.chat_history)
+# --- 6. AUTOPLAY LATEST RESPONSE ---
+# Only plays the immediate latest response once, then clears it
+if st.session_state.latest_audio_to_play is not None:
+    st.audio(st.session_state.latest_audio_to_play, format="audio/mp3", autoplay=True)
+    st.session_state.latest_audio_to_play = None  # Reset so it won't re-trigger on future reruns
 
-for idx, msg in enumerate(st.session_state.chat_history):
+# --- 7. CHAT DISPLAY ---
+for msg in st.session_state.chat_history:
     if msg["role"] == "Child":
         st.chat_message("user").write(msg["text"])
     else:
         with st.chat_message("assistant"):
             st.write(msg["text"])
-            is_latest = (idx == total_messages - 1)
             if msg["audio"] is not None:
-                audio_container = st.container()
-                with audio_container:
-                    st.audio(
-                        msg["audio"], 
-                        format="audio/mp3", 
-                        autoplay=is_latest
-                    )
+                # Manual playback controls for old chat messages (autoplay disabled)
+                st.audio(msg["audio"], format="audio/mp3", autoplay=False)
