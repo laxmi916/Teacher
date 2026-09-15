@@ -8,8 +8,8 @@ import os
 
 # --- 1. PAGE SETUP ---
 st.set_page_config(page_title="AI Teacher - Kids AI Tutor", page_icon="🎨")
-st.title("🎨 AI Teacher - Learn English & Telugu!")
-st.write("Click the mic to speak or type a message below!")
+st.title("AI Teacher")
+#st.write("Click the mic to speak or type a message below!")
 
 # --- 2. SETUP PERSISTENT GEMINI CLIENT & CHAT ---
 # On Streamlit Cloud, store this key in Secrets Management (st.secrets["GEMINI_API_KEY"])
@@ -80,9 +80,9 @@ def get_response_from_gemini(user_text=None, audio_bytes=None):
 # --- 4. USER INPUT UI ---
 try:
     from streamlit_mic_recorder import mic_recorder
-    st.subheader("🎤 Speak to AI Teacher:")
+    #st.subheader("🎤 Speak to AI Teacher:")
     audio_data = mic_recorder(
-        start_prompt="Click to Speak 🎙️",
+        start_prompt="Speak 🎙️",
         stop_prompt="Click to Stop & Send 🛑",
         key="recorder",
         just_once=False
@@ -91,8 +91,8 @@ except ImportError:
     st.warning("`streamlit-mic-recorder` not found. Install it to enable microphone input.")
     audio_data = None
 
-text_input = st.text_input("Or type your message (Telugu or English):", key="text_field")
-submit_text = st.button("Send Text")
+#text_input = st.text_input("Or type your message (Telugu or English):", key="text_field")
+#submit_text = st.button("Send Text")
 
 # --- 5. PROCESS INPUT & RESPOND ---
 user_audio_bytes = None
